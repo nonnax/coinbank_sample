@@ -10,7 +10,7 @@ root="/home/seti/ruby-sandbox/github/coinbank/"
 data_file=root+"market_#{Time.now.yday}.csv"
 bank_file=root="/home/seti/ruby-sandbox/github/coinbank/bank1.csv"
 
-IO.popen("today.rb", &:read) if Time.now - File.mtime(data_file) > 60
+IO.popen("bin/today.rb", &:read) unless File.exists?(data_file) && (Time.now - File.mtime(data_file) < 60)
 
 df=Rover.parse_csv(File.read(data_file), header_converters: [:symbol])
 df_bank=Rover.parse_csv(File.read(bank_file), header_converters: [:symbol])
@@ -25,10 +25,10 @@ data[:amount_change]= data[:new_amount]-data[:old_amount]
 data[:price_change]=  data[:current_price]-data[:price]
 data[:position]=  data[:price]==0 ? (data[:current_price]/data[:price]-1)*100 : 0
 # p data
-KEYS=%i[id current_price price price_change position hold new_amount old_amount amount_change]
+KEYS=%i[id current_price high_24h low_24h price price_change position hold new_amount old_amount amount_change]
 d=[]
 data[KEYS].to_a.map do |h|
-  d << [h[:id], *h.values_at(*%i[current_price price price_change position hold new_amount old_amount amount_change]).map(&:commify)]
+  d << [h[:id], *h.values_at(*%i[current_price high_24h low_24h price price_change position hold new_amount old_amount amount_change]).map(&:commify)]
 end
 
 tab=ArrayCSV.new('table.csv', 'w')
