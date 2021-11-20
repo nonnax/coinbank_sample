@@ -4,9 +4,7 @@ require 'aitch'
 require 'arraycsv'
 require 'array_table'
 
-root="/home/seti/ruby-sandbox/github/coinbank/"
-data_file=root+"market_#{Time.now.yday}.csv"
-json_file=root+"market_#{Time.now.yday}.json"
+data_file="/tmp/price_market.csv"
 
 KEYS=%i[id current_price high_24h low_24h price_change_percentage_24h price_change_percentage_7d_in_currency price_change_percentage_14d_in_currency price_change_percentage_30d_in_currency market_cap_change_percentage_24h]
 

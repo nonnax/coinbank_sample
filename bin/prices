@@ -6,10 +6,8 @@ require 'array_table'
 require 'arraycsv'
 require 'tempfile'
 
-bankfile='bank1.csv'
-root="/home/seti/ruby-sandbox/github/coinbank/"
-data_file=root+"market_#{Time.now.yday}.csv"
-bank_file=root="/home/seti/ruby-sandbox/github/coinbank/#{bankfile}"
+bank_file=File.expand_path('~/.bank.csv')
+data_file="/tmp/price_market.csv"
 
 IO.popen("prices_today.rb", &:read) unless File.exists?(data_file) && (Time.now - File.mtime(data_file) < 60)
 
