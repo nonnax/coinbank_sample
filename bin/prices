@@ -20,7 +20,7 @@ df[:ch_lowhigh]=(df[:high_24h]/df[:low_24h]-1)*100
 
 def df.view
   dfout=self[%i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h]]
-  outf='price_market.csv'
+  outf='/tmp/price_market.csv'
   File.write(outf, dfout.to_csv)
   puts IO.popen("csv_table #{outf}", &:read)
 end
@@ -35,7 +35,7 @@ data[:position]=  data[:price]==0 ? (data[:current_price]/data[:price]-1)*100 : 
 # p data
 
 def data.view
-  outf='price_table.csv'
+  outf='/tmp/price_table.csv'
   col_keys=%i[id current_price high_24h low_24h price price_change position hold new_amount old_amount amount_change]
   tab=ArrayCSV.new(outf, 'w')
 
