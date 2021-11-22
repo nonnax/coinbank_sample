@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
 # Id$ nonnax 2021-11-19 10:39:32 +0800
 require 'rover-df'
-require 'numeric_ext'
-require 'array_table'
-require 'arraycsv'
+require 'rubytools/numeric_ext'
+require 'rubytools/array_table'
+require 'rubytools/arraycsv'
 require 'tempfile'
 
 bank_file=File.expand_path('~/.bank.csv')

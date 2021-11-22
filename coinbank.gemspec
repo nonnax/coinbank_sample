@@ -12,7 +12,6 @@ Gem::Specification.new do |s|
   s.authors = ["xxanon"]
   s.email = "ironald@gmail.com"
   s.files = files
-  s.files << File.expand_path("~/.bank.csv")
   s.executables << 'prices'
   s.executables << 'prices_today.rb'
   s.homepage = "https://github.com/nonnax/coinbank.git"

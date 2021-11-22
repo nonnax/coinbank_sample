@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # Id$ nonnax 2021-11-19 10:15:08 +0800
 require 'aitch'
-require 'arraycsv'
-require 'array_table'
+require 'rubytools/arraycsv'
+require 'rubytools/array_table'
 
 data_file="/tmp/price_market.csv"
 
