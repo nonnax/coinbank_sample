@@ -14,7 +14,7 @@ IO.popen("prices_today.rb", &:read) unless File.exists?(data_file) && (Time.now 
 t=[]
 df=[]
 df_bank=[]
-t<<Thread.new(df){ df 		= Rover.parse_csv(File.read(data_file), header_converters: [:symbol])}
+t<<Thread.new(df){ df = Rover.parse_csv(File.read(data_file), header_converters: [:symbol])}
 t<<Thread.new(df_bank){ df_bank = Rover.parse_csv(File.read(bank_file), header_converters: [:symbol])}
 t.map(&:join)
 
@@ -25,7 +25,7 @@ def df.view
   Tempfile.create('price_market.csv') do |tf|
     tf.puts dfout.to_csv
     tf.rewind
-    puts IO.popen("csv_table #{tf.path}", &:read)
+    puts IO.popen("csview.rb #{tf.path}", &:read)
   end
 end
 
@@ -49,7 +49,7 @@ def data.view
 
         tab.dataframe=tab.sort_by{|a| a[0].to_s }
         tab.prepend(col_keys)
-        puts IO.popen("csv_table #{tf.path}", &:read)
+        puts IO.popen("csview.rb #{tf.path}", &:read)
       end
     end
   end.join
