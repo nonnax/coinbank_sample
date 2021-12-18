@@ -22,9 +22,11 @@ df[:ch_lowhigh]=(df[:high_24h]/df[:low_24h]-1)*100
 
 def df.view
   dfout=self[%i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h]]
-  outf='/tmp/price_market.csv'
-  File.write(outf, dfout.to_csv)
-  puts IO.popen("csv_table #{outf}", &:read)
+  Tempfile.create('price_market.csv') do |tf|
+    tf.puts dfout.to_csv
+    tf.rewind
+    puts IO.popen("csv_table #{tf.path}", &:read)
+  end
 end
 
 data=df.left_join(df_bank)
@@ -38,9 +40,9 @@ data[:pnl_ch]=  data[:price]==0 ? (data[:current_price]/data[:price]-1)*100 : 0
 
 def data.view
   Thread.new do
-    Tempfile.create('price_table.csv') do |tf|
+    Tempfile.create do |tf|
       col_keys=%i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
-      tab=ArrayCSV.new(outf, 'w')
+      tab=ArrayCSV.new(tf.path, 'w')
 
       self[col_keys].to_a.map do |h|
         tab << [h[:id], *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]).map(&:commify)]
