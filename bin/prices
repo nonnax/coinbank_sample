@@ -1,4 +1,6 @@
 #!/usr/bin/env -S ruby --jit
+# frozen_string_literal: true
+
 # Id$ nonnax 2021-11-19 10:39:32 +0800
 require 'rover-df'
 require 'rubytools/numeric_ext'
@@ -6,22 +8,24 @@ require 'rubytools/array_table'
 require 'rubytools/array_csv'
 require 'tempfile'
 
-bank_file=File.expand_path('~/.bank.csv')
-data_file="/tmp/price_market.csv"
+bank_file = File.expand_path('~/.bank.csv')
+data_file = '/tmp/price_market.csv'
 
-IO.popen("prices_today.rb", &:read) unless File.exists?(data_file) && (Time.now - File.mtime(data_file) < 60)
+IO.popen('prices_today.rb', &:read) unless File.exist?(data_file) && (Time.now - File.mtime(data_file) < 60)
 
-t=[]
-df=[]
-df_bank=[]
-t<<Thread.new(df){ df = Rover.parse_csv(File.read(data_file), header_converters: [:symbol])}
-t<<Thread.new(df_bank){ df_bank = Rover.parse_csv(File.read(bank_file), header_converters: [:symbol])}
+t = []
+df = []
+df_bank = []
+t << Thread.new(df) { df = Rover.parse_csv(File.read(data_file), header_converters: [:symbol]) }
+t << Thread.new(df_bank) { df_bank = Rover.parse_csv(File.read(bank_file), header_converters: [:symbol]) }
 t.map(&:join)
 
-df[:ch_lowhigh]=(df[:high_24h]/df[:low_24h]-1)*100
+df[:ch_lowhigh] = (df[:high_24h] / df[:low_24h] - 1) * 100
 
 def df.view
-  dfout=self[%i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h]]
+  dfout = self[ 
+                %i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h] 
+              ]
   Tempfile.create('price_market.csv') do |tf|
     tf.puts dfout.to_csv
     tf.rewind
@@ -29,25 +33,27 @@ def df.view
   end
 end
 
-data=df.left_join(df_bank)
+data = df.left_join(df_bank)
 
-data[:market_val]= data[:current_price]*data[:hold]
-data[:cost]= data[:price]*data[:hold]
-data[:pnl]= data[:market_val]-data[:cost]
-data[:price_change]=  data[:current_price]-data[:price]
-data[:pnl_ch]=  data[:price]==0 ? (data[:current_price]/data[:price]-1)*100 : 0
+data[:market_val] = data[:current_price] * data[:hold]
+data[:cost] = data[:price] * data[:hold]
+data[:pnl] = data[:market_val] - data[:cost]
+data[:price_change] = data[:current_price] - data[:price]
+data[:pnl_ch] = (data[:price])==0 ? (data[:current_price] / data[:price] - 1) * 100 : 0
 # p data
 
 def data.view
- Thread.new do
+  Thread.new do
     Tempfile.create do |tf|
-      col_keys=%i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
+      col_keys = %i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
       ArrayCSV.open(tf.path, 'w', autosave: true) do |tab|
         self[col_keys].to_a.map do |h|
-          tab << [h[:id], *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]).map(&:commify)].flatten
+          tab << [h[:id],
+                  *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch
+                                   pnl]).map(&:commify)].flatten
         end
 
-        tab.dataframe=tab.sort_by{|a| a[0].to_s }
+        tab.dataframe = tab.sort_by { |a| a[0].to_s }
         tab.prepend(col_keys)
         puts IO.popen("csview.rb #{tf.path}", &:read)
       end
@@ -55,7 +61,7 @@ def data.view
   end.join
 end
 
-data.view 
+data.view
 
 puts
 
