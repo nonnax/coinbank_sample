@@ -3,7 +3,7 @@
 require 'rover-df'
 require 'rubytools/numeric_ext'
 require 'rubytools/array_table'
-require 'rubytools/array_csv'
+require './array_csv'
 require 'tempfile'
 
 bank_file=File.expand_path('~/.bank.csv')
@@ -39,24 +39,23 @@ data[:pnl_ch]=  data[:price]==0 ? (data[:current_price]/data[:price]-1)*100 : 0
 # p data
 
 def data.view
-  Thread.new do
+ Thread.new do
     Tempfile.create do |tf|
       col_keys=%i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
-      tab=ArrayCSV.new(tf.path, 'w')
+      ArrayCSV.open(tf.path, 'w', autosave: true) do |tab|
+        self[col_keys].to_a.map do |h|
+          tab << [h[:id], *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]).map(&:commify)].flatten
+        end
 
-      self[col_keys].to_a.map do |h|
-        tab << [h[:id], *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]).map(&:commify)]
+        tab.dataframe=tab.sort_by{|a| a[0].to_s }
+        tab.prepend(col_keys)
+        puts IO.popen("csv_table #{tf.path}", &:read)
       end
-
-      tab.dataframe=tab.dataframe.sort_by{|a| a[0].to_s }
-      tab.dataframe.prepend(col_keys)
-      tab.save
-      puts IO.popen("csv_table #{tf.path}", &:read)
     end
   end.join
 end
 
-data.view
+data.view 
 
 puts
 
