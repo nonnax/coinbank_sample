@@ -3,7 +3,7 @@
 require 'rover-df'
 require 'rubytools/numeric_ext'
 require 'rubytools/array_table'
-require './array_csv'
+require 'rubytools/array_csv'
 require 'tempfile'
 
 bank_file=File.expand_path('~/.bank.csv')
