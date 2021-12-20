@@ -31,4 +31,4 @@ Thread.new{
   data.save
 }.join
 
-puts IO.popen("csv_table #{data_file}", &:read)
+puts IO.popen("csview.rb #{data_file}", &:read)
