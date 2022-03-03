@@ -1,4 +1,4 @@
-#!/usr/bin/env -S ruby --jit
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 # Id$ nonnax 2021-11-19 10:39:32 +0800
@@ -8,7 +8,7 @@ require 'rubytools/array_table'
 require 'rubytools/array_csv'
 require 'tempfile'
 
-bank_file = File.expand_path('~/.bank.csv')
+bank_file = File.expand_path('~/.bank/bank1.csv')
 data_file = '/tmp/price_market.csv'
 
 IO.popen('prices_today.rb', &:read) unless File.exist?(data_file) && (Time.now - File.mtime(data_file) < 60)

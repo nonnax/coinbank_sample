@@ -1,6 +1,6 @@
 #!/usr/bin/env -S ruby --jit
 # Id$ nonnax 2021-11-19 10:15:08 +0800
-require 'aitch'
+require 'httparty'
 require 'rubytools/array_csv'
 require 'rubytools/array_table'
 require 'rubytools/thread_ext'
@@ -14,7 +14,7 @@ KEYS=%i[id current_price high_24h low_24h price_change_percentage_24h price_chan
 def get(coins=%i[bitcoin bitcoin-cash ethereum chainlink litecoin ripple uniswap])
     url="https://api.coingecko.com/api/v3/coins/markets?vs_currency=php&ids=#{coins.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,14d,30d,90d"
     res=""
-    Thread.new(res){res=Aitch.get(url)}.join
+    Thread.new(res){res=HTTParty.get(url)}.join
     jdata=JSON.parse(res.body, symbolize_names: true)
     [jdata.map{|coin| coin.values_at(*KEYS)}, jdata]
 end

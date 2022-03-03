@@ -2,7 +2,9 @@ files=%w[README.md
 bank1.csv
 bin/prices
 bin/prices_today.rb
+install.rb
 coinbank.gemspec
+Gemfile
 ]
 Gem::Specification.new do |s|
   s.name = 'coinbank'
