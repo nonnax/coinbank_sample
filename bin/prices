@@ -23,8 +23,8 @@ t.map(&:join)
 df[:ch_lowhigh] = (df[:high_24h] / df[:low_24h] - 1) * 100
 
 def df.view
-  dfout = self[ 
-                %i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h] 
+  dfout = self[
+                %i[id current_price high_24h low_24h ch_lowhigh price_ch_24h price_ch_7d_php price_ch_30d_php market_cap_ch_24h]
               ]
   Tempfile.create('price_market.csv') do |tf|
     tf.puts dfout.to_csv
@@ -42,26 +42,38 @@ data[:price_change] = data[:current_price] - data[:price]
 data[:pnl_ch] = (data[:price])==0 ? (data[:current_price] / data[:price] - 1) * 100 : 0
 # p data
 
-def data.view
-  Thread.new do
-    Tempfile.create do |tf|
-      col_keys = %i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
-      ArrayCSV.open(tf.path, 'w', autosave: true) do |tab|
-        self[col_keys].to_a.map do |h|
-          tab << [h[:id],
-                  *h.values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch
-                                   pnl]).map(&:commify)].flatten
-        end
-
-        tab.dataframe = tab.sort_by { |a| a[0].to_s }
-        tab.prepend(col_keys)
-        puts IO.popen("csview.rb #{tf.path}", &:read)
-      end
-    end
-  end.join
+def col_keys
+  %i[id current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl]
 end
 
-data.view
+def build_row(h)
+  [
+    h[:id],
+    *h
+    .values_at(*%i[current_price high_24h low_24h price_change market_val cost price hold pnl_ch pnl])
+    .map(&:commify)
+  ].flatten
+end
+
+def data.view(&block)
+  # Thread.new do
+    Tempfile.create do |tf|
+      instance_exec(tf, &block)
+      puts IO.popen("csview.rb #{tf.path}", &:read)
+    end
+  # end.join
+end
+
+data.view{|tf|
+  ArrayCSV.open(tf.path, 'w', autosave: true) do |tab|
+    self[col_keys]
+    .to_a
+    .map{ |h| tab << build_row(h)}
+
+    tab.dataframe = tab.sort_by { |a| a[0].to_s }
+    tab.prepend(col_keys)
+  end
+}
 
 puts
 
