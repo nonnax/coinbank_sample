@@ -36,22 +36,23 @@ end
 def cache(data_file: "/tmp/price_market.csv", timeout: 60, &block)
   bank_file = File.expand_path('~/.bank/bank1.csv')
   ft=Filer.new(TextFile.new(data_file))
-  ft.read{ ft.write '' }
+  data_body=ft.read{ ft.write '' }
   if (age=File.age(data_file)) < timeout
-    puts File.read(data_file)
+    puts data_body
     csv=CSV.parse(File.read(bank_file), converters: %i[numeric date])
     DF
-    .new(csv.first.size){csv}
+    .new(cols: csv.first.size){csv}
     .then{|df| puts df.to_s(delimiter: ' | ')}
   else
-    File.append data_file, block.call
+    ft.write [block.call, data_body].join("\n")
+    # File.append data_file,
   end
 
 end
 
 def print_diff(a, b)
   # if store.size.positive?
-    puts a.diff(b, prefix: '\\ '){|a, b| a.to_i < b.to_i}.to_s(width: 15)
+    puts b.diff(a, prefix: '\\ '){|a, b| b.to_i < a.to_i}.to_s(width: 15)
   # end
 end
 
@@ -65,12 +66,12 @@ cache do
 
     data=get()
     DF
-    .new(data.first.size-1){data.prepend(header_keys)}
+    .new(cols: data.first.size-1){data.prepend(header_keys)}
     .tap{|df|
-        # if store.size.positive?
+        if store.size.positive?
           old_df=DF.new{store.last}
           print_diff(old_df, df)
-        # end
+        end
       }
     .tap{|df| _store.write(store<<df) }
     .to_s(width: 15)
