@@ -5,6 +5,7 @@ require 'csv'
 require 'df/df'
 require 'file/filer'
 require 'rubytools/numeric_ext' #auto pretty-print
+require 'rubytools/ansi_color'
 
 data_file="/tmp/price_market.csv"
 
@@ -48,6 +49,12 @@ def cache(data_file: "/tmp/price_market.csv", timeout: 60, &block)
 
 end
 
+def print_diff(a, b)
+  # if store.size.positive?
+    puts a.diff(b, prefix: '\\ '){|a, b| a.to_i < b.to_i}.to_s(width: 15)
+  # end
+end
+
 cache do
     require 'faraday'
     dailyfile=File.join('/tmp', [Time.now.strftime('%Y%m%d'), 'txt'].join('.'))
@@ -60,10 +67,10 @@ cache do
     DF
     .new(data.first.size-1){data.prepend(header_keys)}
     .tap{|df|
-        if store.size > 1
+        # if store.size.positive?
           old_df=DF.new{store.last}
-          puts old_df.diff(df, prefix: '\\ '){|a, b| a.to_i < b.to_i}.to_s(width: 15)
-        end
+          print_diff(old_df, df)
+        # end
       }
     .tap{|df| _store.write(store<<df) }
     .to_s(width: 15)
