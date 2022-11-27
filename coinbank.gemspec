@@ -1,11 +1,3 @@
-files=%w[README.md
-bank1.csv
-bin/prices
-bin/prices_today.rb
-install.rb
-coinbank.gemspec
-Gemfile
-]
 Gem::Specification.new do |s|
   s.name = 'coinbank'
   s.version = '0.0.1'
@@ -13,12 +5,8 @@ Gem::Specification.new do |s|
   s.summary = "Personal portfolio tracker"
   s.authors = ["xxanon"]
   s.email = "ironald@gmail.com"
-  s.files = files
-  s.executables << 'prices'
-  s.executables << 'prices_today.rb'
+  s.files = `git ls-files`.split("\n") - %w[bin misc]
+  s.executables += `git ls-files bin`.split("\n").map{|e| File.basename(e)}
   s.homepage = "https://github.com/nonnax/coinbank.git"
   s.license = "GPL-3.0"
-
-  # s.add_dependency "rover-df"
-  # s.add_dependency "aitch"
 end
