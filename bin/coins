@@ -1,81 +1,77 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 # Id$ nonnax 2021-11-19 10:15:08 +0800
 require 'file/file_ext'
 require 'csv'
 require 'df/df'
 require 'file/filer'
-require 'rubytools/numeric_ext' #auto pretty-print
+require 'rubytools/numeric_ext' # auto pretty-print
 require 'rubytools/ansi_color'
 
-data_file="/tmp/price_market.csv"
+data_file = '/tmp/price_market.csv'
 
-PRICE_CHANGE_PERCENTAGE_24H=4
+PRICE_CHANGE_PERCENTAGE_24H = 4
 
-KEYS=%i[
-id current_price high_24h low_24h price_change_percentage_24h
-price_change_percentage_7d_in_currency price_change_percentage_14d_in_currency
-price_change_percentage_30d_in_currency market_cap_change_percentage_24h
-]
+KEYS = %i[
+  id current_price high_24h low_24h price_change_percentage_24h
+  price_change_percentage_7d_in_currency price_change_percentage_14d_in_currency
+  price_change_percentage_30d_in_currency market_cap_change_percentage_24h
+].freeze
 def header_keys
-    KEYS
+  KEYS
     .map(&:to_s)
     .lazy
-    .map{|k| k.gsub(/change_percentage_/,'ch_').gsub(/in_currency/,'php') }
+    .map { |k| k.gsub(/change_percentage_/, 'ch_').gsub(/in_currency/, 'php') }
     .to_a
 end
 
+def get(coins = %i[bitcoin bitcoin-cash ethereum chainlink litecoin ripple uniswap])
+  url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=php&ids=#{coins.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,14d,30d,90d"
 
-def get(coins=%i[bitcoin bitcoin-cash ethereum chainlink litecoin ripple uniswap])
-    url="https://api.coingecko.com/api/v3/coins/markets?vs_currency=php&ids=#{coins.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h,7d,14d,30d,90d"
-
-    Faraday.get(url)
-    .then{|res| JSON.parse(res.body, symbolize_names: true) }
-    .map{|coin| coin.values_at(*KEYS)}
+  Faraday.get(url)
+         .then { |res| JSON.parse(res.body, symbolize_names: true) }
+         .map { |coin| coin.values_at(*KEYS) }
 end
 
-def cache(data_file: "/tmp/price_market.csv", timeout: 60, &block)
+def cache(data_file: '/tmp/price_market.csv', timeout: 60, &block)
   bank_file = File.expand_path('~/.bank/bank1.csv')
-  ft=Filer.new(TextFile.new(data_file))
-  data_body=ft.read{ ft.write '' }
-  if (age=File.age(data_file)) < timeout
-    puts data_body
-    csv=CSV.parse(File.read(bank_file), converters: %i[numeric date])
-    DF
-    .new(cols: csv.first.size){csv}
-    .then{|df| puts df.to_s(delimiter: ' | ')}
+  ft = Filer.new(TextFile.new(data_file))
+  if (age = File.age(data_file)) < timeout
+    puts ft.read { ft.write ''; 'no data' } # write an empty string on init
   else
-    ft.write [block.call, data_body].join("\n")
-    # File.append data_file,
+    ft.write [block.call, ft.read{nil}].join("\n")
   end
-
 end
 
-def print_diff(a, b)
-  # if store.size.positive?
-    puts b.diff(a, prefix: '\\ '){|a, b| b.to_i < a.to_i}.to_s(width: 15)
-  # end
+def puts_diff(a, b, &block)
+  unless block&.call # returns a boolean
+    puts b.to_s(width: 15)
+    return
+  end
+  puts Time.now.strftime('%r')
+  puts b.diff(a, prefix: '\\ ').to_s(width: 15)
+  puts 'previous close'
+  puts a.to_s(width: 15)
+end
+
+def make_path(ext)
+  File.join('/tmp', [Time.now.strftime('%Y%m%d'), ext].join('.'))
 end
 
 cache do
-    require 'faraday'
-    dailyfile=File.join('/tmp', [Time.now.strftime('%Y%m%d'), 'txt'].join('.'))
-    fstore=File.join('/tmp', [Time.now.strftime('%Y%m%d'), 'mar'].join('.'))
+  require 'faraday'
+  dailyfile = make_path('txt')
+  fstore = make_path('mar')
 
-    _store=Filer.new(MarshalFile.new(fstore))
-    store=_store.read{[]}
+  _store = Filer.new(MarshalFile.new(fstore))
+  store = _store.read { [] }
 
-    data=get()
-    DF
-    .new(cols: data.first.size-1){data.prepend(header_keys)}
-    .tap{|df|
-        if store.size.positive?
-          old_df=DF.new{store.last}
-          print_diff(old_df, df)
-        end
-      }
-    .tap{|df| _store.write(store<<df) }
+  data = get
+  DF
+    .new(cols: data.first.size - 1) { data.prepend(header_keys) }
+    .tap { |df| puts_diff(DF.new{ store.last }, df){ store.size.positive? } }
+    .tap { |df| _store.write(store << df) }
     .to_s(width: 15)
-    .then{|s| [Time.now.strftime('%c'), s].join("\n")}
-    .tap{|s| File.append dailyfile, s }
-    .tap{|s| puts s }
+    .then { |s| [Time.now.strftime('%c'), s].join("\n") }
 end
