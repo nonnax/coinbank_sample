@@ -17,10 +17,14 @@ def puts_diff(a, b, &block)
     puts b.to_s(width: 15)
     return
   end
-  puts Time.now.strftime('%r')
-  puts b.diff(a, prefix: '\\ ').to_s(width: 15)
-  puts 'previous close'
-  puts a.to_s(width: 15)
+  [
+    Time.now.strftime('%r'),
+    b.diff(a, prefix: '\\ ').to_s(width: 15),
+    'previous close',
+    a.to_s(width: 15)
+  ]
+  .join("\n")
+  .tap(&method(:puts))
 end
 
 def file_exist!(path)
@@ -35,7 +39,6 @@ end
 
 cache do
   require 'faraday'
-  # dailyfile = make_path('txt')
   fstore = make_path('mar')
 
   mar, store = Filer.load(MarshalFile.new(fstore)){ [] }
