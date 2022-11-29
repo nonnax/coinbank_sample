@@ -5,25 +5,23 @@
 require 'file/file_ext'
 # require 'csv'
 require 'df/df'
+# require 'df/diff'
 require 'file/filer'
 require 'rubytools/numeric_ext' # auto pretty-print
 require 'rubytools/ansi_color'
+require_relative '../lib/diff'
 require_relative '../lib/cache'
 require_relative '../lib/price_get'
 
-def puts_diff(a, b, &block)
+def puts_diff(a, b)
   # a & b are DF objects
-  unless block&.call # returns a boolean
-    puts b.to_s(width: 15)
-    return
-  end
   [
-    Time.now.strftime('%r'),
-    b.diff(a, prefix: '\\ ').to_s(width: 15),
+    'last close',
+    b.diff(a, width: 15, symbols:%w[- \  +]).to_s(width: 15),
     'previous close',
-    a.to_s(width: 15)
+    a.diff(a, width: 15, symbols:%w[d \  u]).to_s(width: 15)
   ]
-  .join("\n")
+  .join("\n---\n")
   .tap(&method(:puts))
 end
 
@@ -37,17 +35,12 @@ def make_path(ext)
   # file_exist!(path)
 end
 
-cache do
+def fstore; 'coins.mar' end
+
+cache(data_file: fstore, fn: method(:puts_diff)) do
   require 'faraday'
-  fstore = make_path('mar')
-
-  mar, store = Filer.load(MarshalFile.new(fstore)){ [] }
-
   data = get
   DF
     .new(cols: data.first.size - 1) { data.prepend(header_keys) }
-    .tap { |df| puts_diff(DF.new{ store.last }, df){ store.size.positive? } }
-    .tap { |df| mar.write(store << df) }
-    .to_s(width: 15)
-    .then { |s| [Time.now.strftime('%c'), s].join("\n") }
+    .tap{ |df| puts df.to_s(width: 15) }
 end
